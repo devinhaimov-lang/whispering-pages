@@ -1,15 +1,21 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { chapters } from "@/data/novel";
 import { ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+interface ChapterData {
+  id: number;
+  title: string;
+  content: string[];
+}
+
 interface NovelReaderProps {
+  chapters: ChapterData[];
   currentChapter: number;
   onChapterChange: (chapter: number) => void;
   onTextSelect: (text: string) => void;
 }
 
-const NovelReader = ({ currentChapter, onChapterChange, onTextSelect }: NovelReaderProps) => {
+const NovelReader = ({ chapters, currentChapter, onChapterChange, onTextSelect }: NovelReaderProps) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const chapter = chapters[currentChapter];
 
@@ -27,9 +33,16 @@ const NovelReader = ({ currentChapter, onChapterChange, onTextSelect }: NovelRea
     }
   }, [currentChapter]);
 
+  if (!chapter) {
+    return (
+      <div className="flex items-center justify-center h-full text-muted-foreground">
+        暂无章节内容
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full">
-      {/* 顶部导航 */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-border">
         <button
           onClick={() => onChapterChange(Math.max(0, currentChapter - 1))}
@@ -57,7 +70,6 @@ const NovelReader = ({ currentChapter, onChapterChange, onTextSelect }: NovelRea
         </button>
       </div>
 
-      {/* 阅读区域 */}
       <div
         ref={contentRef}
         className="flex-1 overflow-y-auto paper-texture vignette"
@@ -72,19 +84,16 @@ const NovelReader = ({ currentChapter, onChapterChange, onTextSelect }: NovelRea
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.5 }}
             >
-              {/* 章节标题 */}
               <h2 className="text-2xl font-bold text-center mb-8 text-foreground tracking-widest font-display">
                 {chapter.title}
               </h2>
 
-              {/* 装饰分隔线 */}
               <div className="flex items-center justify-center mb-8">
                 <div className="h-px w-16 bg-cinnabar/30" />
                 <div className="mx-3 w-2 h-2 rotate-45 bg-cinnabar/50" />
                 <div className="h-px w-16 bg-cinnabar/30" />
               </div>
 
-              {/* 正文 */}
               <div className="space-y-6">
                 {chapter.content.map((paragraph, idx) => (
                   <motion.p
@@ -99,7 +108,6 @@ const NovelReader = ({ currentChapter, onChapterChange, onTextSelect }: NovelRea
                 ))}
               </div>
 
-              {/* 章末装饰 */}
               <div className="flex items-center justify-center mt-12 mb-8">
                 <div className="h-px w-24 bg-border" />
                 <span className="mx-4 text-muted-foreground text-sm">— 本章完 —</span>
@@ -110,13 +118,12 @@ const NovelReader = ({ currentChapter, onChapterChange, onTextSelect }: NovelRea
         </div>
       </div>
 
-      {/* 底部章节选择 */}
-      <div className="flex items-center gap-2 px-6 py-3 border-t border-border bg-card/50">
+      <div className="flex items-center gap-2 px-6 py-3 border-t border-border bg-card/50 overflow-x-auto">
         {chapters.map((ch, idx) => (
           <button
             key={ch.id}
             onClick={() => onChapterChange(idx)}
-            className={`text-xs px-3 py-1.5 rounded transition-all ${
+            className={`text-xs px-3 py-1.5 rounded transition-all whitespace-nowrap ${
               idx === currentChapter
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted"
