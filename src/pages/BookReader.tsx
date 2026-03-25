@@ -14,6 +14,15 @@ const BookReader = () => {
 
   const book = books.find((b) => b.id === bookId);
 
+  const handleTextSelect = useCallback((text: string) => {
+    setSelectedText(text);
+    setShowChat(true);
+  }, []);
+
+  const handleSelectedTextUsed = useCallback(() => {
+    setSelectedText("");
+  }, []);
+
   if (!book || !book.hasContent) {
     return (
       <div className="h-screen flex items-center justify-center paper-texture">
@@ -30,15 +39,6 @@ const BookReader = () => {
       </div>
     );
   }
-
-  const handleTextSelect = useCallback((text: string) => {
-    setSelectedText(text);
-    setShowChat(true);
-  }, []);
-
-  const handleSelectedTextUsed = useCallback(() => {
-    setSelectedText("");
-  }, []);
 
   return (
     <div className="h-screen flex flex-col bg-background">
