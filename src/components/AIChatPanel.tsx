@@ -1,7 +1,9 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { chapters, type Chapter } from "@/data/novel";
+import { supabase } from "@/integrations/supabase/client";
 import { Send, Sparkles, User, Scroll } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 
 interface Message {
   id: string;
@@ -15,59 +17,47 @@ interface AIChatPanelProps {
   onSelectedTextUsed: () => void;
 }
 
-// 模拟 AI 响应（后续接入 Lovable Cloud）
-function generateResponse(chapter: Chapter, userMessage: string): string {
-  const { characterState } = chapter;
-  const responses: Record<number, string[]> = {
-    1: [
-      "公子说的这段……倒让我想起那日山中的情形。那时我伤了前腿，疼得厉害，忽然看见一个背着竹篓的年轻人走过来，目光温和。那一刻，我便知道这个人不会伤我。",
-      "嗯？公子对这段文字感兴趣？那日山风甚冷，我本以为自己要在山中冻死了。你施的金创药虽是凡物，却带着暖意……说来惭愧，堂堂一个修行百年的狐，竟被一个凡人所救。",
-      "那枚玉佩是我族中之物，我犹豫了许久才决定留给你。毕竟……我们狐族有个规矩，玉佩赠人，便是欠下了一段因果。",
-      "我在这山中修行已久，见过许多人上山采药，却从没见过像公子这般心善的。旁人见了狐，不是害怕就是起了贪念，只有你……只想着给我敷药。",
-    ],
-    2: [
-      "公子莫怪我那夜突然造访。实在是……那伤好了之后，心中总记挂着那个替我敷药的人。辗转反侧了好几日，才鼓起勇气来见你。",
-      "那三滴灵露，是我花了三年才凝聚而成的。送给公子，我并不觉得可惜。只是……你千万别告诉旁人我是狐，人间对我们这些异类，向来不太友善。",
-      "那几个字……'莫忘，莫争'……我刻的时候想了很久。莫忘，是希望你不要忘记那日的善意。莫争，是你的名字，也是我对自己说的——莫要争这不该有的心思。可是……",
-      "那老槐树开的花，是我施了一点小法术。我知道这样不好，可是……看到满树白花的时候，你笑了，对吗？你笑起来的样子，很好看。",
-    ],
-    3: [
-      "镇上的怪事，确实让我忧心。那个东西的气息我在山中就感应到了，比我修行更久，心性也更加阴沉。公子千万要小心。",
-      "我不会让那东西伤害这个小镇的。公子愿意和我同行，我……我很高兴，也很担心。妖与人并肩，在这世间并不容易。",
-      "那玉佩的护身之力是真的，但也有限。若是那东西全力出手，我也不确定能不能护住你。所以公子，若到了危险的时候，你一定要先跑，答应我。",
-      "和公子在一起的这半个月，是我修行以来最快乐的时光。教你认草药的时候，看你笨手笨脚的样子，我总是想笑……啊，不是，我不是在笑你。",
-    ],
-  };
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/novel-chat`;
 
-  const chapterResponses = responses[chapter.id] || responses[1];
-  return chapterResponses[Math.floor(Math.random() * chapterResponses.length)];
+// Generate a session ID per browser tab
+const SESSION_ID = crypto.randomUUID();
+
+function getGreeting(chapter: Chapter): string {
+  const greetings: Record<number, string> = {
+    1: "……你是那个采药人？我方才在山路上见过你。你手上的那枚玉佩，可要收好了。",
+    2: "公子，别来无恙。上次匆匆一别，未能好好答谢。今夜月色甚好，不知你可愿听我说几句话？",
+    3: "公子，镇上最近的事，你也注意到了吧？我们需要好好谈谈。那东西……不好对付。",
+  };
+  return greetings[chapter.id] || greetings[1];
 }
 
 const AIChatPanel = ({ currentChapter, selectedText, onSelectedTextUsed }: AIChatPanelProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const chapter = chapters[currentChapter];
 
-  // 章节切换时清空对话并发送欢迎
+  // Chapter change: reset with greeting
   useEffect(() => {
-    const greeting = getGreeting(chapter);
+    abortRef.current?.abort();
     setMessages([
       {
         id: Date.now().toString(),
         role: "assistant",
-        content: greeting,
+        content: getGreeting(chapter),
       },
     ]);
+    setIsStreaming(false);
   }, [currentChapter]);
 
-  // 选中文字自动填入
+  // Selected text auto-fill
   useEffect(() => {
     if (selectedText) {
-      setInput(`「${selectedText}」\n\n——你对这段话怎么看？`);
+      setInput(`\u300C${selectedText}\u300D\n\n——你对这段话怎么看？`);
       onSelectedTextUsed();
       inputRef.current?.focus();
     }
@@ -77,8 +67,25 @@ const AIChatPanel = ({ currentChapter, selectedText, onSelectedTextUsed }: AICha
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSend = () => {
-    if (!input.trim()) return;
+  const saveMessage = useCallback(
+    async (role: string, content: string) => {
+      try {
+        await supabase.from("chat_messages").insert({
+          session_id: SESSION_ID,
+          book_id: "mozheng",
+          chapter_id: chapter.id,
+          role,
+          content,
+        });
+      } catch (e) {
+        console.error("Failed to save message:", e);
+      }
+    },
+    [chapter.id]
+  );
+
+  const handleSend = async () => {
+    if (!input.trim() || isStreaming) return;
 
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -86,23 +93,112 @@ const AIChatPanel = ({ currentChapter, selectedText, onSelectedTextUsed }: AICha
       content: input.trim(),
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
     setInput("");
-    setIsTyping(true);
+    setIsStreaming(true);
 
-    // 模拟延迟响应
-    setTimeout(() => {
-      const response = generateResponse(chapter, userMsg.content);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: response,
+    // Save user message
+    saveMessage("user", userMsg.content);
+
+    // Prepare chat history (skip greeting for cleaner context)
+    const chatHistory = updatedMessages
+      .filter((m) => m.role === "user" || (m.role === "assistant" && updatedMessages.indexOf(m) > 0))
+      .map((m) => ({ role: m.role, content: m.content }));
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    let assistantContent = "";
+
+    try {
+      const resp = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-      ]);
-      setIsTyping(false);
-    }, 800 + Math.random() * 1200);
+        body: JSON.stringify({
+          messages: chatHistory,
+          characterState: chapter.characterState,
+          bookTitle: "莫争·故事集",
+          chapterTitle: chapter.title,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error(errData.error || `请求失败 (${resp.status})`);
+      }
+
+      if (!resp.body) throw new Error("No response body");
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let textBuffer = "";
+
+      const upsertAssistant = (chunk: string) => {
+        assistantContent += chunk;
+        const currentContent = assistantContent;
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          if (last?.role === "assistant" && prev.indexOf(last) === prev.length - 1 && last.id.startsWith("stream-")) {
+            return prev.map((m, i) =>
+              i === prev.length - 1 ? { ...m, content: currentContent } : m
+            );
+          }
+          return [...prev, { id: `stream-${Date.now()}`, role: "assistant", content: currentContent }];
+        });
+      };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        textBuffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex: number;
+        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex);
+          textBuffer = textBuffer.slice(newlineIndex + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (line.startsWith(":") || line.trim() === "") continue;
+          if (!line.startsWith("data: ")) continue;
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") break;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) upsertAssistant(content);
+          } catch {
+            textBuffer = line + "\n" + textBuffer;
+            break;
+          }
+        }
+      }
+
+      // Save assistant message
+      if (assistantContent) {
+        saveMessage("assistant", assistantContent);
+      }
+    } catch (e: any) {
+      if (e.name === "AbortError") return;
+      console.error("Stream error:", e);
+      toast.error(e.message || "对话出错了，请稍后再试");
+      if (!assistantContent) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `error-${Date.now()}`,
+            role: "assistant",
+            content: "……抱歉，我方才走了会儿神。公子可否再说一遍？",
+          },
+        ]);
+      }
+    } finally {
+      setIsStreaming(false);
+      abortRef.current = null;
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -169,12 +265,8 @@ const AIChatPanel = ({ currentChapter, selectedText, onSelectedTextUsed }: AICha
           ))}
         </AnimatePresence>
 
-        {isTyping && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex justify-start"
-          >
+        {isStreaming && messages[messages.length - 1]?.role !== "assistant" && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
             <div className="bg-wood-light/60 border border-wood-light/30 rounded-lg px-4 py-3 text-sm">
               <div className="flex items-center gap-1.5">
                 <span className="text-gold text-xs">执笔中</span>
@@ -210,27 +302,18 @@ const AIChatPanel = ({ currentChapter, selectedText, onSelectedTextUsed }: AICha
           />
           <button
             onClick={handleSend}
-            disabled={!input.trim() || isTyping}
+            disabled={!input.trim() || isStreaming}
             className="self-end p-2.5 bg-cinnabar hover:bg-cinnabar-glow text-primary-foreground rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <Send size={16} />
           </button>
         </div>
         <p className="text-xs text-secondary-foreground/30 mt-2 text-center">
-          选中左侧文字可自动填入对话
+          AI 角色 · 选中左侧文字可自动填入对话
         </p>
       </div>
     </div>
   );
 };
-
-function getGreeting(chapter: Chapter): string {
-  const greetings: Record<number, string> = {
-    1: "……你是那个采药人？我方才在山路上见过你。你手上的那枚玉佩，可要收好了。",
-    2: "公子，别来无恙。上次匆匆一别，未能好好答谢。今夜月色甚好，不知你可愿听我说几句话？",
-    3: "公子，镇上最近的事，你也注意到了吧？我们需要好好谈谈。那东西……不好对付。",
-  };
-  return greetings[chapter.id] || greetings[1];
-}
 
 export default AIChatPanel;
