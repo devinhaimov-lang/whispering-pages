@@ -13,6 +13,10 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        serif: ['"Noto Serif SC"', '"SimSun"', '"STSong"', 'serif'],
+        display: ['"ZCOOL XiaoWei"', '"Noto Serif SC"', 'serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -57,6 +61,15 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        ink: "hsl(var(--ink))",
+        paper: "hsl(var(--paper))",
+        "paper-dark": "hsl(var(--paper-dark))",
+        wood: "hsl(var(--wood))",
+        "wood-light": "hsl(var(--wood-light))",
+        cinnabar: "hsl(var(--cinnabar))",
+        "cinnabar-glow": "hsl(var(--cinnabar-glow))",
+        jade: "hsl(var(--jade))",
+        gold: "hsl(var(--gold))",
       },
       borderRadius: {
         lg: "var(--radius)",
