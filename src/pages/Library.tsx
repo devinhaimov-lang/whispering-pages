@@ -1,33 +1,75 @@
 import { useNavigate } from "react-router-dom";
-import { books } from "@/data/books";
+import { books as staticBooks } from "@/data/books";
+import { useDbBooks, type DbBook } from "@/hooks/useBooks";
 import { BookOpen, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 
-const BookCard = ({ book, index }: { book: (typeof books)[0]; index: number }) => {
+interface DisplayBook {
+  id: string;
+  title: string;
+  subtitle: string;
+  author: string;
+  cover: string;
+  description: string;
+  tags: string[];
+  chapterCount: number;
+  status: string;
+  hasContent: boolean;
+  isDb?: boolean;
+}
+
+function dbToDisplay(b: DbBook): DisplayBook {
+  return {
+    id: b.id,
+    title: b.title,
+    subtitle: b.subtitle,
+    author: b.author,
+    cover: b.cover_url,
+    description: b.description,
+    tags: b.tags || [],
+    chapterCount: 0, // will show from chapters
+    status: b.status,
+    hasContent: true,
+    isDb: true,
+  };
+}
+
+const BookCard = ({ book, index }: { book: DisplayBook; index: number }) => {
   const navigate = useNavigate();
+
+  const handleClick = () => {
+    if (book.isDb) {
+      navigate(`/book/${book.id}?source=db`);
+    } else {
+      navigate(`/book/${book.id}`);
+    }
+  };
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
-      onClick={() => navigate(`/book/${book.id}`)}
+      onClick={handleClick}
       className="group cursor-pointer"
     >
-      {/* 书籍封面 */}
       <div className="relative aspect-[2/3] rounded-sm overflow-hidden shadow-lg group-hover:shadow-2xl transition-shadow duration-500">
-        <img
-          src={book.cover}
-          alt={book.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-          loading="lazy"
-          width={640}
-          height={960}
-        />
-        {/* 暗角遮罩 */}
+        {book.cover ? (
+          <img
+            src={book.cover}
+            alt={book.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+            loading="lazy"
+            width={640}
+            height={960}
+          />
+        ) : (
+          <div className="w-full h-full bg-muted flex items-center justify-center">
+            <BookOpen size={40} className="text-muted-foreground/30" />
+          </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/10 to-transparent" />
 
-        {/* 状态标签 */}
         {book.status !== "连载中" && (
           <div className="absolute top-3 right-3 px-2 py-0.5 bg-wood/80 text-gold text-xs rounded-sm backdrop-blur-sm">
             {book.status}
@@ -39,7 +81,6 @@ const BookCard = ({ book, index }: { book: (typeof books)[0]; index: number }) =
           </div>
         )}
 
-        {/* 底部书名 */}
         <div className="absolute bottom-0 left-0 right-0 p-4">
           <h3 className="text-xl font-bold font-display text-primary-foreground tracking-wider mb-1">
             {book.title}
@@ -48,24 +89,19 @@ const BookCard = ({ book, index }: { book: (typeof books)[0]; index: number }) =
         </div>
       </div>
 
-      {/* 书籍信息 */}
       <div className="mt-3 space-y-2">
         <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
           {book.description}
         </p>
         <div className="flex items-center gap-2 flex-wrap">
           {book.tags.map((tag) => (
-            <span
-              key={tag}
-              className="text-xs px-2 py-0.5 bg-muted text-muted-foreground rounded-sm"
-            >
+            <span key={tag} className="text-xs px-2 py-0.5 bg-muted text-muted-foreground rounded-sm">
               {tag}
             </span>
           ))}
         </div>
         <div className="flex items-center justify-between text-xs text-muted-foreground/60">
           <span>{book.author}</span>
-          <span>{book.chapterCount} 章</span>
         </div>
       </div>
     </motion.div>
@@ -73,9 +109,26 @@ const BookCard = ({ book, index }: { book: (typeof books)[0]; index: number }) =
 };
 
 const Library = () => {
+  const { data: dbBooks = [] } = useDbBooks();
+
+  const allBooks: DisplayBook[] = [
+    ...staticBooks.map((b) => ({
+      id: b.id,
+      title: b.title,
+      subtitle: b.subtitle,
+      author: b.author,
+      cover: b.cover,
+      description: b.description,
+      tags: b.tags,
+      chapterCount: b.chapterCount,
+      status: b.status,
+      hasContent: b.hasContent,
+    })),
+    ...dbBooks.map(dbToDisplay),
+  ];
+
   return (
     <div className="min-h-screen paper-texture">
-      {/* 顶部横幅 */}
       <header className="relative overflow-hidden">
         <div className="wood-grain py-12 sm:py-16 px-6">
           <div className="max-w-6xl mx-auto text-center">
@@ -84,7 +137,6 @@ const Library = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
-              {/* 装饰印章 */}
               <div className="flex items-center justify-center gap-3 mb-4">
                 <div className="h-px w-12 bg-gold/30" />
                 <Sparkles size={16} className="text-gold/60" />
@@ -108,29 +160,21 @@ const Library = () => {
         </div>
       </header>
 
-      {/* 书架区域 */}
       <main className="max-w-6xl mx-auto px-6 py-10">
-        {/* 分区标题 */}
         <div className="flex items-center gap-3 mb-8">
           <BookOpen size={18} className="text-cinnabar" />
-          <h2 className="text-lg font-display text-foreground tracking-wider">
-            全部卷册
-          </h2>
-          <span className="text-xs text-muted-foreground">
-            共 {books.length} 卷
-          </span>
+          <h2 className="text-lg font-display text-foreground tracking-wider">全部卷册</h2>
+          <span className="text-xs text-muted-foreground">共 {allBooks.length} 卷</span>
           <div className="flex-1 h-px bg-border ml-4" />
         </div>
 
-        {/* 书籍网格 */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 sm:gap-8">
-          {books.map((book, index) => (
+          {allBooks.map((book, index) => (
             <BookCard key={book.id} book={book} index={index} />
           ))}
         </div>
       </main>
 
-      {/* 底部 */}
       <footer className="border-t border-border py-8 text-center">
         <p className="text-xs text-muted-foreground/40 tracking-wider">
           志怪录 · 沉浸式 AI 小说阅读平台
