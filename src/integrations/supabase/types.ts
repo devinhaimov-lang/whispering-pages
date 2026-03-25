@@ -14,6 +14,101 @@ export type Database = {
   }
   public: {
     Tables: {
+      books: {
+        Row: {
+          author: string | null
+          cover_url: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          slug: string
+          sort_order: number | null
+          status: string | null
+          subtitle: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          author?: string | null
+          cover_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          slug: string
+          sort_order?: number | null
+          status?: string | null
+          subtitle?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          author?: string | null
+          cover_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          slug?: string
+          sort_order?: number | null
+          status?: string | null
+          subtitle?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      chapters: {
+        Row: {
+          book_id: string
+          chapter_number: number
+          character_mood: string | null
+          character_name: string | null
+          character_persona: string | null
+          content: string[] | null
+          created_at: string | null
+          id: string
+          known_events: string[] | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          book_id: string
+          chapter_number: number
+          character_mood?: string | null
+          character_name?: string | null
+          character_persona?: string | null
+          content?: string[] | null
+          created_at?: string | null
+          id?: string
+          known_events?: string[] | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          book_id?: string
+          chapter_number?: number
+          character_mood?: string | null
+          character_name?: string | null
+          character_persona?: string | null
+          content?: string[] | null
+          created_at?: string | null
+          id?: string
+          known_events?: string[] | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapters_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages: {
         Row: {
           book_id: string
