@@ -30,6 +30,7 @@ interface AIChatPanelProps {
   currentChapter: number;
   selectedText: string;
   onSelectedTextUsed: () => void;
+  characterOverride?: CharacterState;
 }
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/novel-chat`;
