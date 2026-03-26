@@ -118,7 +118,7 @@ const AIChatPanel = ({ bookId, chapters, currentChapter, selectedText, onSelecte
         },
         body: JSON.stringify({
           messages: chatHistory,
-          characterState: chapter.characterState,
+          characterState: activeCharacter,
           bookTitle: bookId,
           chapterTitle: chapter.title,
         }),
@@ -202,14 +202,14 @@ const AIChatPanel = ({ bookId, chapters, currentChapter, selectedText, onSelecte
             <Sparkles size={18} className="text-cinnabar-glow" />
           </div>
           <div>
-            <h3 className="font-bold text-gold text-sm tracking-wider font-display">{chapter.characterState.name || "AI 角色"}</h3>
-            <p className="text-xs text-secondary-foreground/60 mt-0.5">{chapter.characterState.mood || "等待对话"}</p>
+            <h3 className="font-bold text-gold text-sm tracking-wider font-display">{activeCharacter?.name || "AI 角色"}</h3>
+            <p className="text-xs text-secondary-foreground/60 mt-0.5">{activeCharacter?.mood || "等待对话"}</p>
           </div>
         </div>
-        {chapter.characterState.knownEvents.length > 0 && (
+        {activeCharacter && activeCharacter.knownEvents.length > 0 && (
           <div className="mt-3 flex items-center gap-2 text-xs text-secondary-foreground/40">
             <Scroll size={12} />
-            <span>已知事件：{chapter.characterState.knownEvents.length} 件</span>
+            <span>已知事件：{activeCharacter.knownEvents.length} 件</span>
           </div>
         )}
       </div>
@@ -221,7 +221,7 @@ const AIChatPanel = ({ bookId, chapters, currentChapter, selectedText, onSelecte
               <div className={`max-w-[85%] rounded-lg px-4 py-3 text-sm leading-relaxed ${msg.role === "user" ? "bg-cinnabar/20 text-secondary-foreground border border-cinnabar/30" : "bg-wood-light/60 text-secondary-foreground/90 border border-wood-light/30"}`}>
                 <div className="flex items-center gap-2 mb-1.5">
                   {msg.role === "assistant" ? <Sparkles size={12} className="text-gold" /> : <User size={12} className="text-cinnabar-glow" />}
-                  <span className="text-xs text-secondary-foreground/50">{msg.role === "assistant" ? (chapter.characterState.name || "AI") : "你"}</span>
+                  <span className="text-xs text-secondary-foreground/50">{msg.role === "assistant" ? (activeCharacter?.name || "AI") : "你"}</span>
                 </div>
                 <p className="whitespace-pre-wrap">{msg.content}</p>
               </div>
