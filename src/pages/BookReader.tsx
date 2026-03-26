@@ -42,7 +42,7 @@ const BookReader = () => {
   const navigate = useNavigate();
   const [currentChapter, setCurrentChapter] = useState(0);
   const [selectedText, setSelectedText] = useState("");
-  const [showChat, setShowChat] = useState(true);
+  const [showChat, setShowChat] = useState(false);
 
   const isDbBook = searchParams.get("source") === "db";
 
