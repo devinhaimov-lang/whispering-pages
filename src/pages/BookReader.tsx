@@ -7,7 +7,8 @@ import { chapters as staticChapters } from "@/data/novel";
 import { useDbChapters, type DbChapter } from "@/hooks/useBooks";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, MessageSquare, ArrowLeft } from "lucide-react";
+import { BookOpen, ArrowLeft, Sparkles, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ReaderChapter {
   id: number;
