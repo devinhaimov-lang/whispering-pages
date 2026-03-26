@@ -60,6 +60,7 @@ const Admin = () => {
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [expandedChapter, setExpandedChapter] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/admin/login");
