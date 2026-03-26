@@ -2,12 +2,13 @@ import { useState, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import NovelReader from "@/components/NovelReader";
 import AIChatPanel from "@/components/AIChatPanel";
+import CharacterPicker from "@/components/CharacterPicker";
 import { books } from "@/data/books";
 import { chapters as staticChapters } from "@/data/novel";
 import { useDbChapters, type DbChapter } from "@/hooks/useBooks";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, ArrowLeft, Sparkles, X } from "lucide-react";
+import { BookOpen, ArrowLeft, Sparkles, X, ChevronLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface ReaderChapter {
@@ -20,6 +21,13 @@ interface ReaderChapter {
     persona: string;
     knownEvents: string[];
   };
+}
+
+interface SelectedCharacter {
+  name: string;
+  mood: string;
+  persona: string;
+  knownEvents: string[];
 }
 
 function dbChapterToReader(ch: DbChapter, idx: number): ReaderChapter {
@@ -42,11 +50,11 @@ const BookReader = () => {
   const navigate = useNavigate();
   const [currentChapter, setCurrentChapter] = useState(0);
   const [selectedText, setSelectedText] = useState("");
-  const [showChat, setShowChat] = useState(false);
+  const [showPanel, setShowPanel] = useState(false);
+  const [selectedCharacter, setSelectedCharacter] = useState<SelectedCharacter | null>(null);
 
   const isDbBook = searchParams.get("source") === "db";
 
-  // For DB books, fetch book info
   const { data: dbBook } = useQuery({
     queryKey: ["db-book", bookId],
     queryFn: async () => {
@@ -58,12 +66,9 @@ const BookReader = () => {
 
   const { data: dbChapters = [] } = useDbChapters(isDbBook ? bookId : undefined);
 
-  // Static book lookup
   const staticBook = !isDbBook ? books.find((b) => b.id === bookId) : null;
-
   const bookTitle = isDbBook ? dbBook?.title || "加载中..." : staticBook?.title || "";
   const bookSubtitle = isDbBook ? dbBook?.subtitle || "" : staticBook?.subtitle || "";
-  const bookIdForChat = isDbBook ? bookId! : bookId!;
 
   const chapters: ReaderChapter[] = isDbBook
     ? dbChapters.map(dbChapterToReader)
@@ -78,11 +83,26 @@ const BookReader = () => {
 
   const handleTextSelect = useCallback((text: string) => {
     setSelectedText(text);
-    setShowChat(true);
-  }, []);
+    if (!showPanel) setShowPanel(true);
+    // If no character selected yet, stay on picker; user will pick then text is ready
+  }, [showPanel]);
 
   const handleSelectedTextUsed = useCallback(() => {
     setSelectedText("");
+  }, []);
+
+  const handleCharacterSelect = useCallback((char: SelectedCharacter) => {
+    setSelectedCharacter(char);
+  }, []);
+
+  const handleBackToPicker = useCallback(() => {
+    setSelectedCharacter(null);
+  }, []);
+
+  // Reset character selection when chapter changes
+  const handleChapterChange = useCallback((ch: number) => {
+    setCurrentChapter(ch);
+    setSelectedCharacter(null);
   }, []);
 
   if (!isDbBook && !staticBook) {
@@ -112,6 +132,8 @@ const BookReader = () => {
     );
   }
 
+  const chapter = chapters[currentChapter];
+
   return (
     <div className="h-screen flex flex-col bg-background">
       <header className="flex items-center justify-between px-6 py-3 border-b border-border bg-card">
@@ -137,13 +159,13 @@ const BookReader = () => {
         <NovelReader
           chapters={chapters}
           currentChapter={currentChapter}
-          onChapterChange={setCurrentChapter}
+          onChapterChange={handleChapterChange}
           onTextSelect={handleTextSelect}
         />
 
-        {/* 浮窗对话 */}
+        {/* 浮窗 */}
         <AnimatePresence>
-          {showChat && (
+          {showPanel && chapter && (
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -152,34 +174,68 @@ const BookReader = () => {
               className="absolute bottom-20 right-6 w-[360px] h-[520px] max-h-[70vh] rounded-xl shadow-2xl border border-border overflow-hidden z-50 flex flex-col"
               style={{ boxShadow: "0 25px 60px -12px rgba(0,0,0,0.35)" }}
             >
-              <div className="flex items-center justify-between px-4 py-2 bg-secondary border-b border-wood-light/30">
-                <span className="text-sm font-display text-gold tracking-wider">角色对话</span>
-                <button onClick={() => setShowChat(false)} className="p-1 rounded hover:bg-wood-light/30 text-secondary-foreground/60 hover:text-secondary-foreground transition-colors">
-                  <X size={16} />
-                </button>
-              </div>
-              <div className="flex-1 min-h-0">
-                <AIChatPanel
-                  bookId={bookIdForChat}
-                  chapters={chapters}
-                  currentChapter={currentChapter}
-                  selectedText={selectedText}
-                  onSelectedTextUsed={handleSelectedTextUsed}
-                />
-              </div>
+              {selectedCharacter ? (
+                <>
+                  <div className="flex items-center justify-between px-4 py-2 bg-secondary border-b border-wood-light/30">
+                    <button onClick={handleBackToPicker} className="flex items-center gap-1 text-xs text-secondary-foreground/60 hover:text-gold transition-colors">
+                      <ChevronLeft size={14} />
+                      <span>换角色</span>
+                    </button>
+                    <span className="text-sm font-display text-gold tracking-wider">{selectedCharacter.name}</span>
+                    <button onClick={() => setShowPanel(false)} className="p-1 rounded hover:bg-wood-light/30 text-secondary-foreground/60 hover:text-secondary-foreground transition-colors">
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <div className="flex-1 min-h-0">
+                    <AIChatPanel
+                      bookId={bookId!}
+                      chapters={chapters}
+                      currentChapter={currentChapter}
+                      selectedText={selectedText}
+                      onSelectedTextUsed={handleSelectedTextUsed}
+                      characterOverride={selectedCharacter}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between px-4 py-2 bg-secondary border-b border-wood-light/30">
+                    <span className="text-sm font-display text-gold tracking-wider">召唤角色</span>
+                    <button onClick={() => setShowPanel(false)} className="p-1 rounded hover:bg-wood-light/30 text-secondary-foreground/60 hover:text-secondary-foreground transition-colors">
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <div className="flex-1 min-h-0">
+                    <CharacterPicker
+                      bookTitle={bookTitle}
+                      chapterTitle={chapter.title}
+                      chapterContent={chapter.content}
+                      onSelect={handleCharacterSelect}
+                      onClose={() => setShowPanel(false)}
+                    />
+                  </div>
+                </>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* 召唤角色按钮 */}
         <motion.button
-          onClick={() => setShowChat(!showChat)}
+          onClick={() => {
+            if (showPanel) {
+              setShowPanel(false);
+              setSelectedCharacter(null);
+            } else {
+              setShowPanel(true);
+            }
+          }}
           className="absolute bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-cinnabar hover:bg-cinnabar-glow text-primary-foreground shadow-lg flex items-center justify-center transition-colors"
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
           style={{ boxShadow: "0 8px 24px -4px hsla(12, 55%, 34%, 0.5)" }}
         >
-          {showChat ? <X size={22} /> : <Sparkles size={22} />}
+          {showPanel ? <X size={22} /> : <Sparkles size={22} />}
         </motion.button>
       </div>
     </div>
