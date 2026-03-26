@@ -60,6 +60,7 @@ const Admin = () => {
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [expandedChapter, setExpandedChapter] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/admin/login");
@@ -183,6 +184,70 @@ const Admin = () => {
     else { toast.success("已删除"); loadChapters(selectedBook!.id); }
   };
 
+  const parseTxtIntoChapters = (text: string): { title: string; content: string[] }[] => {
+    // Match common chapter patterns: 第X章, 第X回, Chapter X, etc.
+    const chapterRegex = /^(第[一二三四五六七八九十百千零\d]+[章回节卷篇]|Chapter\s+\d+)[^\n]*/gim;
+    const matches: { index: number; title: string }[] = [];
+    let match: RegExpExecArray | null;
+
+    while ((match = chapterRegex.exec(text)) !== null) {
+      matches.push({ index: match.index, title: match[0].trim() });
+    }
+
+    if (matches.length === 0) {
+      // No chapter headings found, treat entire text as one chapter
+      const paragraphs = text.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+      return [{ title: "第1章", content: paragraphs }];
+    }
+
+    return matches.map((m, i) => {
+      const start = m.index + text.substring(m.index).indexOf("\n") + 1;
+      const end = i + 1 < matches.length ? matches[i + 1].index : text.length;
+      const body = text.substring(start, end).trim();
+      const paragraphs = body.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+      return { title: m.title, content: paragraphs };
+    });
+  };
+
+  const handleTxtUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedBook) return;
+    e.target.value = "";
+
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const parsed = parseTxtIntoChapters(text);
+
+      if (parsed.length === 0) {
+        toast.error("未能识别章节内容");
+        return;
+      }
+
+      const existingCount = chapters.length;
+      const rows = parsed.map((ch, i) => ({
+        book_id: selectedBook.id,
+        chapter_number: existingCount + i + 1,
+        title: ch.title,
+        content: ch.content,
+        character_name: "",
+        character_mood: "",
+        character_persona: "",
+        known_events: [] as string[],
+      }));
+
+      const { error } = await supabase.from("chapters").insert(rows);
+      if (error) throw error;
+
+      toast.success(`成功导入 ${parsed.length} 个章节`);
+      loadChapters(selectedBook.id);
+    } catch (err: any) {
+      toast.error(err.message || "导入失败");
+    } finally {
+      setImporting(false);
+    }
+  };
+
   if (authLoading) return <div className="min-h-screen flex items-center justify-center paper-texture"><p className="text-muted-foreground">加载中...</p></div>;
   if (!user) return null;
 
@@ -265,12 +330,18 @@ const Admin = () => {
                   <h2 className="text-base font-display tracking-wider">
                     《{selectedBook.title}》章节管理
                   </h2>
-                  <Button size="sm" onClick={() => {
-                    setEditingChapter({ ...emptyChapter, chapter_number: chapters.length + 1 });
-                    setChapterDialogOpen(true);
-                  }}>
-                    <Plus size={14} /> 新增章节
-                  </Button>
+                  <div className="flex gap-2">
+                    <label className={`inline-flex items-center gap-1 px-3 py-1.5 rounded text-sm cursor-pointer border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors ${importing ? 'opacity-50 pointer-events-none' : ''}`}>
+                      <Upload size={14} /> {importing ? "导入中..." : "上传TXT"}
+                      <input type="file" accept=".txt" className="hidden" onChange={handleTxtUpload} disabled={importing} />
+                    </label>
+                    <Button size="sm" onClick={() => {
+                      setEditingChapter({ ...emptyChapter, chapter_number: chapters.length + 1 });
+                      setChapterDialogOpen(true);
+                    }}>
+                      <Plus size={14} /> 新增章节
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
