@@ -43,7 +43,7 @@ function getGreeting(chapter: ChapterData): string {
   return "你好，有什么想聊的吗？";
 }
 
-const AIChatPanel = ({ bookId, chapters, currentChapter, selectedText, onSelectedTextUsed }: AIChatPanelProps) => {
+const AIChatPanel = ({ bookId, chapters, currentChapter, selectedText, onSelectedTextUsed, characterOverride }: AIChatPanelProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -52,6 +52,7 @@ const AIChatPanel = ({ bookId, chapters, currentChapter, selectedText, onSelecte
   const abortRef = useRef<AbortController | null>(null);
 
   const chapter = chapters[currentChapter];
+  const activeCharacter = characterOverride || chapter?.characterState;
 
   useEffect(() => {
     abortRef.current?.abort();
