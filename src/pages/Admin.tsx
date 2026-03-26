@@ -330,12 +330,18 @@ const Admin = () => {
                   <h2 className="text-base font-display tracking-wider">
                     《{selectedBook.title}》章节管理
                   </h2>
-                  <Button size="sm" onClick={() => {
-                    setEditingChapter({ ...emptyChapter, chapter_number: chapters.length + 1 });
-                    setChapterDialogOpen(true);
-                  }}>
-                    <Plus size={14} /> 新增章节
-                  </Button>
+                  <div className="flex gap-2">
+                    <label className={`inline-flex items-center gap-1 px-3 py-1.5 rounded text-sm cursor-pointer border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors ${importing ? 'opacity-50 pointer-events-none' : ''}`}>
+                      <Upload size={14} /> {importing ? "导入中..." : "上传TXT"}
+                      <input type="file" accept=".txt" className="hidden" onChange={handleTxtUpload} disabled={importing} />
+                    </label>
+                    <Button size="sm" onClick={() => {
+                      setEditingChapter({ ...emptyChapter, chapter_number: chapters.length + 1 });
+                      setChapterDialogOpen(true);
+                    }}>
+                      <Plus size={14} /> 新增章节
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
