@@ -247,7 +247,6 @@ const Admin = () => {
       setImporting(false);
     }
   };
-  };
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center paper-texture"><p className="text-muted-foreground">加载中...</p></div>;
   if (!user) return null;
