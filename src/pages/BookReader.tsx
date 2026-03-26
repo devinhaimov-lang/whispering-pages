@@ -7,7 +7,8 @@ import { chapters as staticChapters } from "@/data/novel";
 import { useDbChapters, type DbChapter } from "@/hooks/useBooks";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, MessageSquare, ArrowLeft } from "lucide-react";
+import { BookOpen, ArrowLeft, Sparkles, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ReaderChapter {
   id: number;
@@ -41,7 +42,7 @@ const BookReader = () => {
   const navigate = useNavigate();
   const [currentChapter, setCurrentChapter] = useState(0);
   const [selectedText, setSelectedText] = useState("");
-  const [showChat, setShowChat] = useState(true);
+  const [showChat, setShowChat] = useState(false);
 
   const isDbBook = searchParams.get("source") === "db";
 
@@ -130,31 +131,56 @@ const BookReader = () => {
             </div>
           </div>
         </div>
-        <button onClick={() => setShowChat(!showChat)} className="flex items-center gap-2 px-3 py-1.5 rounded text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors lg:hidden">
-          <MessageSquare size={16} />
-          <span>{showChat ? "隐藏对话" : "角色对话"}</span>
-        </button>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
-        <div className={`flex-1 min-w-0 ${showChat ? "hidden lg:block" : "block"}`}>
-          <NovelReader
-            chapters={chapters}
-            currentChapter={currentChapter}
-            onChapterChange={setCurrentChapter}
-            onTextSelect={handleTextSelect}
-          />
-        </div>
-        <div className="hidden lg:block w-px bg-border" />
-        <div className={`w-full lg:w-[380px] xl:w-[420px] flex-shrink-0 ${showChat ? "block" : "hidden lg:block"}`}>
-          <AIChatPanel
-            bookId={bookIdForChat}
-            chapters={chapters}
-            currentChapter={currentChapter}
-            selectedText={selectedText}
-            onSelectedTextUsed={handleSelectedTextUsed}
-          />
-        </div>
+      <div className="flex-1 overflow-hidden relative">
+        <NovelReader
+          chapters={chapters}
+          currentChapter={currentChapter}
+          onChapterChange={setCurrentChapter}
+          onTextSelect={handleTextSelect}
+        />
+
+        {/* 浮窗对话 */}
+        <AnimatePresence>
+          {showChat && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="absolute bottom-20 right-6 w-[360px] h-[520px] max-h-[70vh] rounded-xl shadow-2xl border border-border overflow-hidden z-50 flex flex-col"
+              style={{ boxShadow: "0 25px 60px -12px rgba(0,0,0,0.35)" }}
+            >
+              <div className="flex items-center justify-between px-4 py-2 bg-secondary border-b border-wood-light/30">
+                <span className="text-sm font-display text-gold tracking-wider">角色对话</span>
+                <button onClick={() => setShowChat(false)} className="p-1 rounded hover:bg-wood-light/30 text-secondary-foreground/60 hover:text-secondary-foreground transition-colors">
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="flex-1 min-h-0">
+                <AIChatPanel
+                  bookId={bookIdForChat}
+                  chapters={chapters}
+                  currentChapter={currentChapter}
+                  selectedText={selectedText}
+                  onSelectedTextUsed={handleSelectedTextUsed}
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 召唤角色按钮 */}
+        <motion.button
+          onClick={() => setShowChat(!showChat)}
+          className="absolute bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-cinnabar hover:bg-cinnabar-glow text-primary-foreground shadow-lg flex items-center justify-center transition-colors"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+          style={{ boxShadow: "0 8px 24px -4px hsla(12, 55%, 34%, 0.5)" }}
+        >
+          {showChat ? <X size={22} /> : <Sparkles size={22} />}
+        </motion.button>
       </div>
     </div>
   );
