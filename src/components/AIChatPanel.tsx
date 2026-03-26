@@ -56,10 +56,10 @@ const AIChatPanel = ({ bookId, chapters, currentChapter, selectedText, onSelecte
 
   useEffect(() => {
     abortRef.current?.abort();
-    if (!chapter) return;
-    setMessages([{ id: Date.now().toString(), role: "assistant", content: getGreeting(chapter) }]);
+    if (!activeCharacter) return;
+    setMessages([{ id: Date.now().toString(), role: "assistant", content: getGreeting({ ...chapter, characterState: activeCharacter }) }]);
     setIsStreaming(false);
-  }, [currentChapter, chapters]);
+  }, [currentChapter, chapters, characterOverride]);
 
   useEffect(() => {
     if (selectedText) {
