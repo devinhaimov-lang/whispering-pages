@@ -139,6 +139,27 @@ export type Database = {
         }
         Relationships: []
       }
+      reader_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          nickname: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          nickname?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          nickname?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
