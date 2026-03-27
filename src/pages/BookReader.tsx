@@ -171,7 +171,7 @@ const BookReader = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="absolute bottom-20 right-6 w-[360px] h-[520px] max-h-[70vh] rounded-xl shadow-2xl border border-border overflow-hidden z-50 flex flex-col"
+              className="absolute bottom-20 right-4 sm:right-6 w-[280px] sm:w-[360px] h-[400px] sm:h-[520px] max-h-[60vh] sm:max-h-[70vh] rounded-xl shadow-2xl border border-border overflow-hidden z-50 flex flex-col"
               style={{ boxShadow: "0 25px 60px -12px rgba(0,0,0,0.35)" }}
             >
               {selectedCharacter ? (
