@@ -112,6 +112,7 @@ const Library = () => {
   const { data: dbBooks = [] } = useDbBooks();
 
   const allBooks: DisplayBook[] = [
+    ...dbBooks.map(dbToDisplay),
     ...staticBooks.map((b) => ({
       id: b.id,
       title: b.title,
@@ -124,7 +125,6 @@ const Library = () => {
       status: b.status,
       hasContent: b.hasContent,
     })),
-    ...dbBooks.map(dbToDisplay),
   ];
 
   return (
