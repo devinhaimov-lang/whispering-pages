@@ -149,6 +149,9 @@ const Library = () => {
               <p className="text-sm sm:text-base text-secondary-foreground/50 tracking-[0.2em] font-serif">
                 世间万物皆有灵，落笔之处即为真
               </p>
+              <p className="text-xs text-secondary-foreground/35 tracking-wider mt-3">
+                书本已更新，首次加载可能需要稍等片刻
+              </p>
 
               <div className="flex items-center justify-center gap-3 mt-6">
                 <div className="h-px w-16 bg-gold/20" />
