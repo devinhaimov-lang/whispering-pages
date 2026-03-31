@@ -183,7 +183,7 @@ const Library = () => {
 
       <footer className="border-t border-border py-8 text-center">
         <p className="text-xs text-muted-foreground/40 tracking-wider">
-          志怪录 · 沉浸式 AI 小说阅读平台
+          莫争·故事集 · 沉浸式 AI 小说阅读平台
         </p>
       </footer>
     </div>
