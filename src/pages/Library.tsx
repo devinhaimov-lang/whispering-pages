@@ -145,10 +145,10 @@ const Library = () => {
               </div>
 
               <h1 className="text-4xl sm:text-5xl font-bold font-display tracking-[0.3em] text-secondary-foreground seal-stamp mb-3">
-                志怪录
+                莫争·故事集
               </h1>
               <p className="text-sm sm:text-base text-secondary-foreground/50 tracking-[0.2em] font-serif">
-                世间万物皆有灵，落笔之处即为真
+                以笔为刃，以墨为魂，书写属于莫争的传奇
               </p>
               <p className="text-xs text-secondary-foreground/35 tracking-wider mt-3">
                 书本已更新，首次加载可能需要稍等片刻
@@ -183,7 +183,7 @@ const Library = () => {
 
       <footer className="border-t border-border py-8 text-center">
         <p className="text-xs text-muted-foreground/40 tracking-wider">
-          志怪录 · 沉浸式 AI 小说阅读平台
+          莫争·故事集 · 沉浸式 AI 小说阅读平台
         </p>
       </footer>
     </div>
