@@ -167,12 +167,12 @@ const BookReader = () => {
         <AnimatePresence>
           {showPanel && chapter && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 40 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="absolute bottom-20 right-4 sm:right-6 w-[280px] sm:w-[360px] h-[400px] sm:h-[520px] max-h-[60vh] sm:max-h-[70vh] rounded-xl shadow-2xl border border-border overflow-hidden z-50 flex flex-col"
-              style={{ boxShadow: "0 25px 60px -12px rgba(0,0,0,0.35)" }}
+              className="fixed inset-x-0 bottom-0 h-[65vh] sm:absolute sm:inset-x-auto sm:bottom-20 sm:right-6 sm:w-[360px] sm:h-[520px] sm:max-h-[70vh] rounded-t-2xl sm:rounded-xl shadow-2xl border border-border overflow-hidden z-50 flex flex-col bg-background"
+              style={{ boxShadow: "0 -8px 40px -8px rgba(0,0,0,0.3)" }}
             >
               {selectedCharacter ? (
                 <>
