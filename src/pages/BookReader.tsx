@@ -55,7 +55,7 @@ const BookReader = () => {
 
   const isDbBook = searchParams.get("source") === "db";
 
-  const { data: dbBook } = useQuery({
+  const { data: dbBook, isLoading: isLoadingBook } = useQuery({
     queryKey: ["db-book", bookId],
     queryFn: async () => {
       const { data } = await supabase.from("books").select("*").eq("id", bookId!).single();
@@ -64,7 +64,7 @@ const BookReader = () => {
     enabled: isDbBook && !!bookId,
   });
 
-  const { data: dbChapters = [] } = useDbChapters(isDbBook ? bookId : undefined);
+  const { data: dbChapters = [], isLoading: isLoadingChapters } = useDbChapters(isDbBook ? bookId : undefined);
 
   const staticBook = !isDbBook ? books.find((b) => b.id === bookId) : null;
   const bookTitle = isDbBook ? dbBook?.title || "加载中..." : staticBook?.title || "";
