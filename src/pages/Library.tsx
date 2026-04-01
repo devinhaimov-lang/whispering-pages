@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { books as staticBooks } from "@/data/books";
 import { useDbBooks, type DbBook } from "@/hooks/useBooks";
 import { BookOpen, Sparkles } from "lucide-react";
 import GuestBook from "@/components/GuestBook";
