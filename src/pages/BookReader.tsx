@@ -220,23 +220,18 @@ const BookReader = () => {
           )}
         </AnimatePresence>
 
-        {/* 召唤角色按钮 */}
-        <motion.button
-          onClick={() => {
-            if (showPanel) {
-              setShowPanel(false);
-              setSelectedCharacter(null);
-            } else {
-              setShowPanel(true);
-            }
-          }}
-          className="absolute bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-cinnabar hover:bg-cinnabar-glow text-primary-foreground shadow-lg flex items-center justify-center transition-colors"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-          style={{ boxShadow: "0 8px 24px -4px hsla(12, 55%, 34%, 0.5)" }}
-        >
-          {showPanel ? <X size={22} /> : <Sparkles size={22} />}
-        </motion.button>
+        {/* 召唤角色按钮 - 手机端面板打开时隐藏 */}
+        {!showPanel && (
+          <motion.button
+            onClick={() => setShowPanel(true)}
+            className="absolute bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-cinnabar hover:bg-cinnabar-glow text-primary-foreground shadow-lg flex items-center justify-center transition-colors"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            style={{ boxShadow: "0 8px 24px -4px hsla(12, 55%, 34%, 0.5)" }}
+          >
+            <Sparkles size={22} />
+          </motion.button>
+        )}
       </div>
     </div>
   );
