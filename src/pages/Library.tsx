@@ -111,21 +111,7 @@ const BookCard = ({ book, index }: { book: DisplayBook; index: number }) => {
 const Library = () => {
   const { data: dbBooks = [] } = useDbBooks();
 
-  const allBooks: DisplayBook[] = [
-    ...dbBooks.map(dbToDisplay),
-    ...staticBooks.map((b) => ({
-      id: b.id,
-      title: b.title,
-      subtitle: b.subtitle,
-      author: b.author,
-      cover: b.cover,
-      description: b.description,
-      tags: b.tags,
-      chapterCount: b.chapterCount,
-      status: b.status,
-      hasContent: b.hasContent,
-    })),
-  ];
+  const allBooks: DisplayBook[] = dbBooks.map(dbToDisplay);
 
   return (
     <div className="min-h-screen paper-texture">
