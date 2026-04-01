@@ -118,6 +118,17 @@ const BookReader = () => {
     );
   }
 
+  if (isDbBook && (isLoadingBook || isLoadingChapters)) {
+    return (
+      <div className="h-screen flex items-center justify-center paper-texture">
+        <div className="text-center space-y-4">
+          <p className="text-2xl font-display text-foreground">书卷加载中…</p>
+          <p className="text-muted-foreground">请稍候片刻</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!hasContent) {
     return (
       <div className="h-screen flex items-center justify-center paper-texture">
