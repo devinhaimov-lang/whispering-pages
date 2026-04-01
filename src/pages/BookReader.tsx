@@ -55,7 +55,7 @@ const BookReader = () => {
 
   const isDbBook = searchParams.get("source") === "db";
 
-  const { data: dbBook } = useQuery({
+  const { data: dbBook, isLoading: isLoadingBook } = useQuery({
     queryKey: ["db-book", bookId],
     queryFn: async () => {
       const { data } = await supabase.from("books").select("*").eq("id", bookId!).single();
@@ -64,7 +64,7 @@ const BookReader = () => {
     enabled: isDbBook && !!bookId,
   });
 
-  const { data: dbChapters = [] } = useDbChapters(isDbBook ? bookId : undefined);
+  const { data: dbChapters = [], isLoading: isLoadingChapters } = useDbChapters(isDbBook ? bookId : undefined);
 
   const staticBook = !isDbBook ? books.find((b) => b.id === bookId) : null;
   const bookTitle = isDbBook ? dbBook?.title || "加载中..." : staticBook?.title || "";
@@ -113,6 +113,17 @@ const BookReader = () => {
           <button onClick={() => navigate("/")} className="mt-4 px-6 py-2 bg-primary text-primary-foreground rounded text-sm hover:bg-cinnabar-glow transition-colors">
             返回书阁
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isDbBook && (isLoadingBook || isLoadingChapters)) {
+    return (
+      <div className="h-screen flex items-center justify-center paper-texture">
+        <div className="text-center space-y-4">
+          <p className="text-2xl font-display text-foreground">书卷加载中…</p>
+          <p className="text-muted-foreground">请稍候片刻</p>
         </div>
       </div>
     );
